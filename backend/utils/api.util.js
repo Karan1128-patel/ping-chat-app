@@ -1,0 +1,138 @@
+import path from 'path';
+import { SERVER_ERROR } from './message.util.js';
+import { isEmpty } from './misc.util.js';
+import { __dirname } from '../constants.js';
+import redis from '../config/redis.js';
+import * as messageModel from "../model/chats.model.js";
+
+const PROJECT_ROOT = path.resolve(__dirname, '../../');
+
+/**
+ * Custom API Error for structured error throwing
+ */
+export class ApiError extends Error {
+  constructor([statusCode, msg], item = null, internal = null, isOperational = true) {
+    super(msg.replace(/:item/g, item ?? ''));
+    this.statusCode = statusCode;
+    this.item = item;
+    this.internal = internal;
+    this.isOperational = isOperational;
+  }
+}
+
+/**
+ * Universal async error handler for controller functions
+ */
+export const apiHandler = (requestHandler) => {
+  return async (req, res, next) => {
+    try {
+      await requestHandler(req, res, next);
+    } catch (err) {
+      const shouldLog = !(err instanceof ApiError && err.isOperational);
+      const includeStack = shouldLog;
+
+      if (shouldLog) {
+        console.error(err.internal);
+      }
+
+      if (err instanceof ApiError) {
+        return apiError([err.statusCode, err.message], err.item, includeStack ? err : null, res);
+      }
+
+      return apiError(SERVER_ERROR, null, includeStack ? err : null, res);
+    }
+  };
+};
+
+/**
+ * Success response formatter
+ */
+export const apiResponse = ([statusCode, msg], item = null, data = null, res = null, type = "array", token = null) => {
+  const message = msg.replace(/:item/g, item ?? '');
+  const success = statusCode < 400;
+
+  const response = {
+    success,
+    message,
+    code: statusCode,
+  };
+
+
+
+  if (!isEmpty(data)) {
+    response.data = data;
+  } else {
+    if (type == "array") {
+      response.data = [];
+    } else if (type === "object") {
+      response.data = {};
+    } else {
+      response.data = null;
+    }
+  }
+
+  if (token) {
+    response.token = token;
+  }
+
+  if (res) {
+    return res.status(statusCode).json(response);
+  }
+
+  return response;
+};
+
+/**
+ * Error response formatter (with cleaned stack trace)
+ */
+export const apiError = ([statusCode, msg], item = null, err = null, res = null) => {
+  const message = msg.replace(/:item/g, item ?? '');
+
+  const errorResponse = {
+    success: false,
+    message,
+    code: statusCode,
+  };
+
+  if (err) {
+    if (Array.isArray(err)) {
+      errorResponse.errors = err;
+    } else {
+      errorResponse.error = err.message;
+
+      const stackLines = err.stack?.split('\n');
+      if (stackLines?.length >= 2) {
+        const rawPath = stackLines[1];
+        const match = rawPath.match(/only-golf[\\/].*/);
+        const relativePath = match ? match[0].replace(/\\/g, '/') : rawPath;
+        errorResponse.stack = relativePath.trim();
+      }
+    }
+  }
+
+  if (res) {
+    return res.status(statusCode).json(errorResponse);
+  }
+
+  return errorResponse;
+};
+
+
+export const getMessageSourceData = async (message_id, receiver_id,) => {
+  const pattern = `offline:${receiver_id}:*`;
+  const keys = await redis.keys(pattern);
+  for (const key of keys) {
+    const messages = await redis.lrange(key, 0, -1);
+    for (const msgStr of messages) {
+      const msg = JSON.parse(msgStr);
+      if (msg.id === message_id) {
+        return { sender_id: msg.sender_id, sender_device_id: msg.sender_device_id };
+      }
+    }
+  }
+  const dbMsg = await messageModel.getMessageById(message_id);
+  if (dbMsg) {
+    return { sender_id: dbMsg.sender_id, sender_device_id: dbMsg.sender_device_id };
+  }
+  return null;
+};
