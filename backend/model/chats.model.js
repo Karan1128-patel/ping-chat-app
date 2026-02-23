@@ -8,14 +8,15 @@ export const insertMessage = async ({
   conversation_id,
   status,
   sender_device_id,
-  reciver_device_id
+  reciver_device_id,
+  timestamp
 }) => {
   const result = await db.query(
     `INSERT INTO messages
-     (id, sender_id,receiver_id,message_type, encrypted_payload, created_at, conversation_id,status,sender_device_id,reciver_device_id)
-     VALUES ($1, $2, $3, $4, $5, NOW(), $6,$7,$8,$9)
+     (id, sender_id,receiver_id,message_type, encrypted_payload, created_at, conversation_id,status,sender_device_id,reciver_device_id,timestamp)
+     VALUES ($1, $2, $3, $4, $5, NOW(), $6,$7,$8,$9,$10)
      RETURNING *`,
-    [conversation_id, sender_id, receiver_id, message_type, encrypted_payload, conversation_id, status,sender_device_id,reciver_device_id]
+    [conversation_id, sender_id, receiver_id, message_type, encrypted_payload, conversation_id, status,sender_device_id,reciver_device_id,timestamp]
   );
 
   return result;
@@ -130,4 +131,10 @@ export const getMessageById = async (messageId) => {
 
   const  rows  = await db.query(query, [messageId]);
   return rows[0] || null;
+};
+
+
+export const deleteMessagesByDevice = async (userId, deviceId) => {
+  const query = `DELETE FROM messages WHERE (sender_id = $1 AND sender_device_id = $2) OR (receiver_id = $1 AND receiver_device_id = $2)`;
+  await db.query(query, [userId, deviceId]);
 };

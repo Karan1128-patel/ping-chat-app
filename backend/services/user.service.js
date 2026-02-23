@@ -10,6 +10,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import * as userModel from "../model/user.model.js";
+import * as messageModel from "../model/chats.model.js";
+
 import { CustomImagePath } from "../utils/misc.util.js";
 
 const saltRounds = 10;
@@ -248,13 +250,30 @@ export const matchContactsService = async (phones) => {
 
 };
 
-export const deleteUserKeysService = async (userId, device_id) => {
-  await userModel.deleteIdentityKeyModel(userId, device_id);
-  await userModel.deletePreKeysModel(userId, device_id);
-  await userModel.deleteSignedPreKeysModel(userId, device_id);
-  return { userId, device_id, deleted: true };
-};
+// export const deleteUserKeysService = async (userId, device_id) => {
+//   await userModel.deleteIdentityKeyModel(userId, device_id);
+//   await userModel.deletePreKeysModel(userId, device_id);
+//   await userModel.deleteSignedPreKeysModel(userId, device_id);
+//   return { userId, device_id, deleted: true };
+// };
 
+export const deleteUserKeysService = async (userId, deviceId) => {
+  await userModel.deleteIdentityKeyModel(userId, deviceId);
+  await userModel.deletePreKeysModel(userId, deviceId);
+  await userModel.deleteSignedPreKeysModel(userId, deviceId);
+
+  const redisKey = `offline:${userId}:${deviceId}`;
+  await redis.del(redisKey);
+
+  const unreadPattern = `unread:${userId}:*`;
+  const unreadKeys = await redis.keys(unreadPattern);
+
+  if (unreadKeys.length > 0) {
+    await redis.del(unreadKeys);
+  }
+  await messageModel.deleteMessagesByDevice(userId, deviceId);
+  return {userId,deviceId,deleted: true};
+};
 
 export const getUserProfileServiceByUserId = async (user_ids) => {
   try {

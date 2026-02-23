@@ -51,7 +51,7 @@ export const sendMessageServiceBySocket = async ({
               id: msg.conversation_id, sender_id: msg.sender_id, receiver_id: msg.receiver_id,
               conversation_id: msg.conversation_id, encrypted_payload: msg.encrypted_payload,
               created_at: msg.created_at, message_type: msg.message_type, status: "sent", sender_device_id: msg.sender_device_id,
-              reciver_device_id: msg.reciver_device_id
+              reciver_device_id: msg.reciver_device_id,timestamp: msg.timestamp
             });
           }
           await redis.del(redisKey);

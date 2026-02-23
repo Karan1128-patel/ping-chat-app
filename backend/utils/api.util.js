@@ -122,7 +122,7 @@ export const getMessageSourceData = async (message_id, receiver_id,) => {
   const pattern = `offline:${receiver_id}:*`;
   const keys = await redis.keys(pattern);
   for (const key of keys) {
-    const messages = await redis.lrange(key, 0, -1);
+    const messages = await redis.lrange(key, 0, -1); 
     for (const msgStr of messages) {
       const msg = JSON.parse(msgStr);
       if (msg.id === message_id) {
