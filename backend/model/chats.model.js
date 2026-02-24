@@ -16,7 +16,7 @@ export const insertMessage = async ({
      (id, sender_id,receiver_id,message_type, encrypted_payload, created_at, conversation_id,status,sender_device_id,reciver_device_id,timestamp)
      VALUES ($1, $2, $3, $4, $5, NOW(), $6,$7,$8,$9,$10)
      RETURNING *`,
-    [conversation_id, sender_id, receiver_id, message_type, encrypted_payload, conversation_id, status,sender_device_id,reciver_device_id,timestamp]
+    [conversation_id, sender_id, receiver_id, message_type, encrypted_payload, conversation_id, status, sender_device_id, reciver_device_id, timestamp]
   );
 
   return result;
@@ -42,9 +42,16 @@ export const markSeenModel = async ({ ids, userId }) => {
   return result;
 };
 
+// export const getPendingMessagesByDevice = async (receiver_id) => {
+//   const result = await db.query(
+//     `SELECT * FROM messages WHERE receiver_id = $1 AND status IN ('sent','delivered') ORDER BY created_at ASC`, [receiver_id]
+//   );
+//   return result || [];
+// };
+
 export const getPendingMessagesByDevice = async (receiver_id) => {
   const result = await db.query(
-    `SELECT * FROM messages WHERE receiver_id = $1 AND status IN ('sent','delivered') ORDER BY created_at ASC`, [receiver_id]
+    `SELECT * FROM messages WHERE receiver_id = $1 AND status ='sent' ORDER BY created_at ASC`, [receiver_id]
   );
   return result || [];
 };
@@ -129,7 +136,7 @@ export const getMessageById = async (messageId) => {
     LIMIT 1
   `;
 
-  const  rows  = await db.query(query, [messageId]);
+  const rows = await db.query(query, [messageId]);
   return rows[0] || null;
 };
 

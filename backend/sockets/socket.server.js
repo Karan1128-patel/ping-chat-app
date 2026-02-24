@@ -64,14 +64,45 @@ export const initSocketServer = async (httpServer) => {
       }
       allMessages.sort((a, b) => a.created_at - b.created_at);
 
-      setTimeout(() => {
+      // setTimeout(() => {
+      //   for (const msg of allMessages) {
+      //     socket.emit("chat_receive", { ...msg, encrypted_payload: msg.encrypted_payload ? msg.encrypted_payload.toString() : null });
+      //     const senderRoom = `user:${msg.sender_id}:device:${msg.sender_device_id}`;
+      //     io.to(senderRoom).emit("message_delivered", { message_id: msg.id, conversation_id: msg.conversation_id, status: "delivered" });
+      //   }
+      // }, 500);
+
+      // ---------------------------new flow------------------------------------------------------//
+      setTimeout(async () => {
         for (const msg of allMessages) {
-          socket.emit("chat_receive", { ...msg, encrypted_payload: msg.encrypted_payload ? msg.encrypted_payload.toString() : null, status: "delivered" });
-          const senderRoom = `user:${msg.sender_id}:device:${msg.sender_device_id}`;
-          io.to(senderRoom).emit("message_delivered", { message_id: msg.id, conversation_id: msg.conversation_id, status: "delivered" });
+          if (msg.status !== "sent") continue;
+          socket.emit("chat_receive", {...msg,encrypted_payload: msg.encrypted_payload? msg.encrypted_payload.toString(): null});
+          const senderRoom =`user:${msg.sender_id}:device:${msg.sender_device_id}`;
+          io.to(senderRoom).emit("message_delivered", {message_id: msg.id,conversation_id: msg.conversation_id,status: "delivered"});
+
+          //UPDATE DB IF MESSAGE CAME FROM DB
+          if (!msg.source || msg.source === "db") {
+            await messageModel.updateMessageStatus(msg.id, "delivered");
+          }
+ 
+          // 🔥 UPDATE REDIS IF MESSAGE CAME FROM REDIS
+          if (msg.source === "redis") {
+            const redisKey = `offline:${userId}:${deviceId}`;
+            const messages = await redis.lrange(redisKey, 0, -1);
+            for (const msgStr of messages) {
+              const redisMsg = JSON.parse(msgStr);
+              if (redisMsg.id === msg.id) {
+                const updatedMsg = {...redisMsg,status: "delivered"};
+                await redis.lrem(redisKey, 0, msgStr);
+                await redis.rpush(redisKey, JSON.stringify(updatedMsg));
+                break;
+              }
+            }
+          }
         }
       }, 500);
-      
+
+      // --------------------------end of flow ------------------------------------------------------//
       chatGateway(io, socket);
 
       socket.on("disconnect", async () => {
