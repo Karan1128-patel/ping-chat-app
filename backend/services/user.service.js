@@ -271,7 +271,7 @@ export const deleteUserKeysService = async (userId, deviceId) => {
   if (unreadKeys.length > 0) {
     await redis.del(unreadKeys);
   }
-  await messageModel.deleteMessagesByDevice(userId, deviceId);
+  // await messageModel.deleteMessagesByDevice(userId, deviceId);
   return {userId,deviceId,deleted: true};
 };
 

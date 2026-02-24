@@ -141,7 +141,12 @@ export const getMessageById = async (messageId) => {
 };
 
 
-export const deleteMessagesByDevice = async (userId, deviceId) => {
-  const query = `DELETE FROM messages WHERE (sender_id = $1 AND sender_device_id = $2) OR (receiver_id = $1 AND reciver_device_id = $2)`;
-  await db.query(query, [userId, deviceId]);
+// export const deleteMessagesByDevice = async (userId, deviceId) => {
+//   const query = `DELETE FROM messages WHERE (sender_id = $1 AND sender_device_id = $2) OR (receiver_id = $1 AND reciver_device_id = $2)`;
+//   await db.query(query, [userId, deviceId]);
+// };
+
+export const deleteMessagesByDevice = async (deviceId) => {
+  const query = `DELETE FROM messages WHERE reciver_device_id = $1`;
+  await db.query(query, [ deviceId]);
 };

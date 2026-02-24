@@ -19,7 +19,7 @@ export const sendOtp = apiHandler(async (req, res) => {
 });
 
 export const verifyOtp = apiHandler(async (req, res) => {
-    const { phone_number, country_code, otp, lang } = req.body;
+    const { phone_number, country_code, otp, lang ,device_id} = req.body;
     let language = lang ? lang : "en";
     let phoneHash = await userService.verifyOtpService({ phone_number, country_code, otp, language });
     let user = await userModel.getUserByPhoneHash(phoneHash);
@@ -27,6 +27,7 @@ export const verifyOtp = apiHandler(async (req, res) => {
         throw new ApiError(INVALID, getMessageByLang(language, "OTP_INVALID"));
     }
     const token = jwt.sign({ phone_hash: phoneHash, id: user[0].id, language: user[0].language }, process.env.JWT_SECRET, { expiresIn: "30d" });
+    let deleteReciverPreviousMsg = await messageModel.deleteMessagesByDevice(device_id);
     let userDetails = { token: token, user_id: user[0].id, language: user[0].language };
     return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "OTP_VERIFIED"), userDetails, res);
 });
