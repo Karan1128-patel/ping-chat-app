@@ -4,6 +4,7 @@ import { messageEvents } from "../events/message.events.js";
 import * as userModel from "../../model/user.model.js";
 
 export default function registerChatGateway(io, socket) {
+    
     socket.on("fetch_offline_messages", async () => {
         const userId = socket.userId;
         const deviceId = socket.deviceId;
@@ -17,17 +18,17 @@ export default function registerChatGateway(io, socket) {
     socket.on("get_user_profile", async ({ user_id }) => {
         try {
             const user = await userModel.getUserByIdModel(user_id);
-            socket.emit("user_profile", {success: true,data: user[0]});
+            socket.emit("user_profile", { success: true, data: user[0] });
         } catch (error) {
-            socket.emit("user_profile", {success: false,message: "Failed to fetch user" });
+            socket.emit("user_profile", { success: false, message: "Failed to fetch user" });
         }
     });
 
-    socket.on("message_read", async ({ message_id,sender_id, sender_device_id, receiver_id, receiver_device_id, conversation_id}) => {
+    socket.on("message_read", async ({ message_id, sender_id, sender_device_id, receiver_id, receiver_device_id, conversation_id }) => {
         try {
             await messageModel.deleteMessage(message_id);
             const redisKey = `offline:${receiver_id}:${receiver_device_id}`;
-            const messages =await redis.lrange(redisKey, 0, -1);
+            const messages = await redis.lrange(redisKey, 0, -1);
             for (const msgStr of messages) {
                 const msg = JSON.parse(msgStr);
                 if (msg.id === message_id) {
@@ -36,12 +37,38 @@ export default function registerChatGateway(io, socket) {
                 }
             }
             const senderRoom = `user:${sender_id}:device:${sender_device_id}`;
-            io.to(senderRoom).emit("message_read_receipt",{message_id,conversation_id,status: "read"});
+            io.to(senderRoom).emit("message_read_receipt", { message_id, conversation_id, status: "read" });
             console.log("🗑 Message deleted from DB & Redis after read");
         } catch (err) {
             console.error("❌ message_read error:", err);
         }
 
+    });
+
+    socket.on("message_delivered_ack", async ({ message_id, receiver_id, receiver_device_id }) => {
+        try {
+            const redisKey = `offline:${receiver_id}:${receiver_device_id}`;
+            const messages = await redis.lrange(redisKey, 0, -1);
+            for (const msgStr of messages) {
+                const msg = JSON.parse(msgStr);
+                if (msg.id === message_id) {
+                    const updatedMsg = { ...msg, status: "delivered" };
+                    await redis.lrem(redisKey, 0, msgStr);
+                    await redis.rpush(redisKey, JSON.stringify(updatedMsg));
+                    await messageModel.updateMessageStatus(message_id, "delivered");
+                    const senderRoom = `user:${msg.sender_id}:device:${msg.sender_device_id}`;
+                    io.to(senderRoom).emit("message_delivered", {
+                        message_id,
+                        conversation_id: msg.conversation_id,
+                        status: "delivered"
+                    });
+                    console.log('msg delivred succesfully>>>>>>>>>>>>>>>✅');
+                    break;
+                }
+            }
+        } catch (err) {
+            console.error("❌ delivered ack error:", err);
+        }
     });
 
 

@@ -17,7 +17,6 @@ export const initMessageListener = () => {
         const sockets = await io.in(room).fetchSockets();
         if (sockets.length > 0) {
             io.to(room).emit("chat_receive", { ...formattedMsg, status: 'delivered' });
-            // await messageModel.updateMessageStatus(formattedMsg.id, 'delivered');
         } else {
             await redis.incr(`unread:${receiver_id}:${conversation_id}`);
         }
@@ -28,8 +27,8 @@ export const initMessageListener = () => {
             const { message_id, receiver_id, conversation_id } = data;
             const io = getIO();
 
-            const messageData =await getMessageSourceData(message_id, receiver_id, conversation_id);
-            if (!messageData) {console.log("Message not found anywhere");return}
+            const messageData = await getMessageSourceData(message_id, receiver_id, conversation_id);
+            if (!messageData) { console.log("Message not found anywhere"); return }
             const { sender_id, sender_device_id } = messageData;
             await messageModel.deleteMessage(message_id);
             const pattern = `offline:${receiver_id}:*`;
@@ -55,5 +54,7 @@ export const initMessageListener = () => {
             console.error("❌ message_read listener error:", err);
         }
     });
+
+    
 
 };

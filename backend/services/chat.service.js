@@ -36,37 +36,19 @@ export const sendMessageServiceBySocket = async ({
   if (sockets.length > 0) {
     io.to(receiverRoom).emit("chat_receive", { ...formattedMsg, status: "delivered" });
     console.log("✅ Real-time sent to receiver device:", reciver_device_id);
-    io.to(senderRoom).emit("message_delivered", { message_id: messageId, conversation_id, status: "delivered" });
-    const messages = await redis.lrange(redisKey, 0, -1);
-
-    // UPDATE SAME MESSAGE STATUS INSIDE REDIS
-    for (const msgStr of messages) {
-      const msg = JSON.parse(msgStr);
-      if (msg.id === messageId) {
-        const updatedMsg = { ...msg, status: "delivered" };
-        await redis.lrem(redisKey, 0, msgStr);
-        await redis.rpush(redisKey, JSON.stringify(updatedMsg));
-        break;
-      }
-    }
-
-
   }
-
   setTimeout(async () => {
     try {
       const stillOnline = await io.in(receiverRoom).fetchSockets();
       if (stillOnline.length === 0) {
         const messages = await redis.lrange(redisKey, 0, -1);
-        console.log('messages',messages);
-        
         if (messages.length > 0) {
           for (const msgStr of messages) {
             const msg = JSON.parse(msgStr);
             await messageModel.insertMessage({
               id: msg.conversation_id, sender_id: msg.sender_id, receiver_id: msg.receiver_id,
               conversation_id: msg.conversation_id, encrypted_payload: msg.encrypted_payload,
-              created_at: msg.created_at, message_type: msg.message_type, status: "sent", sender_device_id: msg.sender_device_id,
+              created_at: msg.created_at, message_type: msg.message_type, status: msg.status, sender_device_id: msg.sender_device_id,
               reciver_device_id: msg.reciver_device_id, timestamp: msg.timestamp
             });
           }

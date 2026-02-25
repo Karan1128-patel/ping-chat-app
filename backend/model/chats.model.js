@@ -41,14 +41,6 @@ export const markSeenModel = async ({ ids, userId }) => {
   const result = await db.query(`UPDATE message_status SET status = 'seen' WHERE message_id IN (${ids}) AND user_id = '${userId}'`);
   return result;
 };
-
-// export const getPendingMessagesByDevice = async (receiver_id) => {
-//   const result = await db.query(
-//     `SELECT * FROM messages WHERE receiver_id = $1 AND status IN ('sent','delivered') ORDER BY created_at ASC`, [receiver_id]
-//   );
-//   return result || [];
-// };
-
 export const getPendingMessagesByDevice = async (receiver_id) => {
   const result = await db.query(
     `SELECT * FROM messages WHERE receiver_id = $1 AND status ='sent' ORDER BY created_at ASC`, [receiver_id]
@@ -56,24 +48,8 @@ export const getPendingMessagesByDevice = async (receiver_id) => {
   return result || [];
 };
 
-// export const updateMessageStatus = async (message_id, status) => {
-//   console.log('status, message_id',status, message_id);
-
-//   const query = `
-//     UPDATE messages
-//     SET status = $1,
-//         delivered_at = CASE WHEN $1 = 'delivered' THEN NOW() ELSE delivered_at END,
-//         read_at = CASE WHEN $1 = 'read' THEN NOW() ELSE read_at END
-//     WHERE id = $2
-//     RETURNING *;
-//   `;
-//   const result = await db.query(query, [status, message_id]);
-//   return result.rows[0];
-// };
-
 export const updateMessageStatus = async (message_id, status) => {
   console.log('status, message_id', status, message_id);
-
   const query = `
     UPDATE messages
     SET status = $1::varchar,
