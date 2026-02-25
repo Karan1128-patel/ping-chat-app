@@ -1,7 +1,7 @@
 import { ApiError, apiHandler, apiResponse } from "../utils/api.util.js";
 import * as userService from "../services/user.service.js";
-import { ADD_SUCCESS, CUSTOM_SUCCESS, FETCH, LOGIN, UPDATE_SUCCESS, REQUIRED, INVALID, NOT_FOUND } from "../utils/message.util.js";
-import { getFileType, getMessageByLang } from "../utils/misc.util.js";
+import { CUSTOM_SUCCESS, REQUIRED, INVALID, NOT_FOUND } from "../utils/message.util.js";
+import { getMessageByLang } from "../utils/misc.util.js";
 import * as userModel from "../model/user.model.js";
 // -------Yogesh code for testing purpose only------------------
 import * as messageModel from "../model/chats.model.js";
@@ -19,14 +19,14 @@ export const sendOtp = apiHandler(async (req, res) => {
 });
 
 export const verifyOtp = apiHandler(async (req, res) => {
-    const { phone_number, country_code, otp, lang ,device_id} = req.body;
+    const { phone_number, country_code, otp, lang, device_id } = req.body;
     let language = lang ? lang : "en";
     let phoneHash = await userService.verifyOtpService({ phone_number, country_code, otp, language });
     let user = await userModel.getUserByPhoneHash(phoneHash);
     if (!phoneHash) {
         throw new ApiError(INVALID, getMessageByLang(language, "OTP_INVALID"));
     }
-    const token = jwt.sign({ phone_hash: phoneHash, id: user[0].id, language: user[0].language }, process.env.JWT_SECRET, { expiresIn: "30d" });
+    const token = jwt.sign({ phone_hash: phoneHash, id: user[0].id, language: user[0].language }, process.env.JWT_SECRET, { expiresIn: "15m" });
     let deleteReciverPreviousMsg = await messageModel.deleteMessagesByDevice(device_id);
     let userDetails = { token: token, user_id: user[0].id, language: user[0].language };
     return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "OTP_VERIFIED"), userDetails, res);
@@ -157,19 +157,16 @@ export const matchContacts = apiHandler(async (req, res) => {
     if (!Array.isArray(phones) || phones.length === 0) {
         throw new ApiError(INVALID, getMessageByLang(language, "PHONE_REQUIRED"), {}, false);
     }
+   
     const matched = await userService.matchContactsService(phones);
     return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "CONTACTS_FETCHED"), { matched }, res);
 });
 
 export const logout = async (req, res, next) => {
-    try {
-        const { id, language } = req.user;
-        const { deviceId } = req.body;
-        const result = await userService.deleteUserKeysService(id, deviceId);
-        return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "USER_KEYS_DELETED"), result, res);
-    } catch (error) {
-        next(error);
-    }
+    const { id, language } = req.user;
+    const { deviceId } = req.body;
+    const result = await userService.deleteUserKeysService(id, deviceId);
+    return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "USER_KEYS_DELETED"), result, res);
 };
 
 export const fetchUserProfileByUserId = apiHandler(async (req, res) => {

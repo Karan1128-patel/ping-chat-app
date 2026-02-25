@@ -23,6 +23,7 @@ import { authGuard } from '../middlewares/guard.middleware.js';
 import redis from '../config/redis.js';
 
 import { uploadProfile } from '../middlewares/multer.middleware.js';
+import { authLimiter } from "../middlewares/rateLimit.middleware.js";
 
 const fieldsConfig = [
   { name: 'profile_image', maxCount: 1 },
@@ -34,10 +35,19 @@ const fieldsConfig = [
 ];
 
 const router = express.Router();
+// ----------------uncomment for rate limiter in live ----------------------------
+
+// router.post("/send-otp", authLimiter, sendOtp);
+// router.post("/verify-otp", authLimiter, verifyOtp);
+// router.post("/resend-otp", authLimiter, resendOtp);
+
+// ----------------------------end of rate limiter----------------------------
 
 router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtp);
 router.post("/resend-otp", resendOtp);
+
+// -----------------without using rate limiter comments on live ---------------------------
 router.post("/create-profile", authGuard, createProfile);
 router.get("/fetch-profile", authGuard, getUserProfile);
 router.put("/update-profile", authGuard, uploadProfile.fields(fieldsConfig), updateUserProfile);

@@ -1,5 +1,6 @@
 import redis from "../config/redis.js";
 import * as messageModel from "../model/chats.model.js";
+// import { messageQueue } from "../queues/message.queue.js";
 import { messageEvents } from "../sockets/events/message.events.js";
 import { getIO } from "../sockets/socket.instance.js";
 
@@ -60,6 +61,9 @@ export const sendMessageServiceBySocket = async ({
       console.error("❌ Background DB move error:", err);
     }
   }, 60000);
+
+  // 🔥 Add BullMQ delayed job instead of setTimeout
+  // await messageQueue.add("moveToDB",{ receiverRoom, redisKey },{ delay: 60000 });
   return formattedMsg;
 };
 

@@ -3,6 +3,11 @@ import Redis from "ioredis";
 const redis = new Redis({
   host: process.env.REDIS_HOST || "127.0.0.1",
   port: process.env.REDIS_PORT || 6379,
+
+  // 🔥 REQUIRED FOR BULLMQ
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+
 });
 
 redis.on("connect", () => {
@@ -17,7 +22,7 @@ export default redis;
 
 
 
-// ----------------------------render on live so right now i m using this one pproch 
+// ----------------------------render on live so right now i m using this one pproch
 
 // import Redis from "ioredis";
 

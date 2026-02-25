@@ -17,11 +17,13 @@ export const validate = (schema, type) => (req, res, next) => {
 };
 
 export const validateMultiple = (schema, types) => (req, res, next) => {
+  if (!Array.isArray(types) || types.length === 0) {
+    return apiError(CUSTOM_ERROR, "Validation types must be a non-empty array", null, res);
+  }
   const validationData = {};
   types.forEach((type) => {
     validationData[type] = req[type];
   });
-
   const { error } = schema.validate(validationData);
   if (error) {
     return apiError(CUSTOM_ERROR, populateMessage(error), null, res);

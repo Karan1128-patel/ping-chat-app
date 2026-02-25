@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import { apiError, apiHandler } from "../utils/api.util.js";
-import { CUSTOM_ERROR, UNAUTHORIZED } from "../utils/message.util.js";
+import { apiError } from "../utils/api.util.js";
+import { UNAUTHORIZED } from "../utils/message.util.js";
 import { JWT_SECRET } from "../constants.js";
 
 export const authGuard = (req, res, next) => {

@@ -9,10 +9,10 @@ const pool = new Pool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD ?? '',
   database: process.env.DB_NAME, 
-  port: process.env.DB_PORT || 5432,
-  max: 10,                     
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  port: process.env.DB_PORT ,
+  max: process.env.MAX_DB_CONNECTIONS ,                     
+  idleTimeoutMillis: process.env.IDLE_TIMEOUT ,
+  connectionTimeoutMillis: process.env.CONNECTION_TIMEOUT,
 });
 
 // --------------------------------only for render deployment as render provide connection string in this format so we have to use connectionString instead of individual params

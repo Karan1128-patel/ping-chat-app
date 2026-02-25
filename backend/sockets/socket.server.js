@@ -62,8 +62,6 @@ export const initSocketServer = async (httpServer) => {
         }
       }
       allMessages.sort((a, b) => a.created_at - b.created_at);
-
-      // ---------------------------new flow------------------------------------------------------//
       setTimeout(async () => {
         for (const msg of allMessages) {
           if (msg.status !== "sent") continue;
@@ -74,8 +72,6 @@ export const initSocketServer = async (httpServer) => {
           });
         }
       }, 500);
-
-      // --------------------------end of flow ------------------------------------------------------//
       chatGateway(io, socket);
 
       socket.on("disconnect", async () => {

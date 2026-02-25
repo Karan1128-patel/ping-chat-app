@@ -1,20 +1,10 @@
 import crypto from "crypto";
 import redis from "../config/redis.js";
 import twilio from "twilio";
-
-import { apiError, ApiError } from "../utils/api.util.js";
-import { ADD_ERROR, CUSTOM_ERROR, EXISTS, INVALID, NOT_FOUND, UPDATE_ERROR } from "../utils/message.util.js";
-import path from "path";
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { ApiError } from "../utils/api.util.js";
+import { CUSTOM_ERROR, INVALID, NOT_FOUND } from "../utils/message.util.js";
 import * as userModel from "../model/user.model.js";
-import * as messageModel from "../model/chats.model.js";
-
 import { CustomImagePath } from "../utils/misc.util.js";
-
-const saltRounds = 10;
 const OTP_TTL = 60;
 const twilioClient = twilio(
   process.env.TWILIO_SID,
@@ -250,13 +240,6 @@ export const matchContactsService = async (phones) => {
 
 };
 
-// export const deleteUserKeysService = async (userId, device_id) => {
-//   await userModel.deleteIdentityKeyModel(userId, device_id);
-//   await userModel.deletePreKeysModel(userId, device_id);
-//   await userModel.deleteSignedPreKeysModel(userId, device_id);
-//   return { userId, device_id, deleted: true };
-// };
-
 export const deleteUserKeysService = async (userId, deviceId) => {
   await userModel.deleteIdentityKeyModel(userId, deviceId);
   await userModel.deletePreKeysModel(userId, deviceId);
@@ -271,8 +254,7 @@ export const deleteUserKeysService = async (userId, deviceId) => {
   if (unreadKeys.length > 0) {
     await redis.del(unreadKeys);
   }
-  // await messageModel.deleteMessagesByDevice(userId, deviceId);
-  return {userId,deviceId,deleted: true};
+  return { userId, deviceId, deleted: true };
 };
 
 export const getUserProfileServiceByUserId = async (user_ids) => {
