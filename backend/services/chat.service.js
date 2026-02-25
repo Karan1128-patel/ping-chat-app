@@ -58,6 +58,8 @@ export const sendMessageServiceBySocket = async ({
       const stillOnline = await io.in(receiverRoom).fetchSockets();
       if (stillOnline.length === 0) {
         const messages = await redis.lrange(redisKey, 0, -1);
+        console.log('messages',messages);
+        
         if (messages.length > 0) {
           for (const msgStr of messages) {
             const msg = JSON.parse(msgStr);

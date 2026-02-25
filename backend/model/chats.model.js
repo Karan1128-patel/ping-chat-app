@@ -56,19 +56,36 @@ export const getPendingMessagesByDevice = async (receiver_id) => {
   return result || [];
 };
 
+// export const updateMessageStatus = async (message_id, status) => {
+//   console.log('status, message_id',status, message_id);
+
+//   const query = `
+//     UPDATE messages
+//     SET status = $1,
+//         delivered_at = CASE WHEN $1 = 'delivered' THEN NOW() ELSE delivered_at END,
+//         read_at = CASE WHEN $1 = 'read' THEN NOW() ELSE read_at END
+//     WHERE id = $2
+//     RETURNING *;
+//   `;
+//   const result = await db.query(query, [status, message_id]);
+//   return result.rows[0];
+// };
+
 export const updateMessageStatus = async (message_id, status) => {
+  console.log('status, message_id', status, message_id);
+
   const query = `
     UPDATE messages
-    SET status = $1,
-        delivered_at = CASE WHEN $1 = 'delivered' THEN NOW() ELSE delivered_at END,
-        read_at = CASE WHEN $1 = 'read' THEN NOW() ELSE read_at END
-    WHERE id = $2
+    SET status = $1::varchar,
+        delivered_at = CASE WHEN $1::varchar = 'delivered' THEN NOW() ELSE delivered_at END,
+        read_at = CASE WHEN $1::varchar = 'read' THEN NOW() ELSE read_at END
+    WHERE id = $2::uuid
     RETURNING *;
   `;
-  const result = await db.query(query, [status, message_id]);
-  return result.rows[0];
-};
 
+  const result = await db.query(query, [status, message_id]);
+  return result.rows;
+};
 
 export const deleteMessage = async (message_id) => {
   return db.query(
@@ -148,5 +165,5 @@ export const getMessageById = async (messageId) => {
 
 export const deleteMessagesByDevice = async (deviceId) => {
   const query = `DELETE FROM messages WHERE reciver_device_id = $1`;
-  await db.query(query, [ deviceId]);
+  await db.query(query, [deviceId]);
 };

@@ -42,7 +42,7 @@ export const initSocketServer = async (httpServer) => {
         dbMessages = [];
       }
       if (!Array.isArray(dbMessages)) { dbMessages = []; }
-      allMessages.push(...dbMessages.map(msg => ({ ...msg, created_at: msg.created_at ? new Date(msg.created_at).getTime() : Date.now() }))
+      allMessages.push(...dbMessages.map(msg => ({ ...msg, source: "db", created_at: msg.created_at ? new Date(msg.created_at).getTime() : Date.now() }))
       );
 
       const redisKey = `offline:${userId}:${deviceId}`;
@@ -57,7 +57,7 @@ export const initSocketServer = async (httpServer) => {
 
       for (const msgStr of redisMessages) {
         try {
-          const msg = JSON.parse(msgStr); allMessages.push({ ...msg, created_at: msg.created_at ? new Date(msg.created_at).getTime() : Date.now() });
+          const msg = JSON.parse(msgStr); allMessages.push({ ...msg, source: "redis",created_at: msg.created_at ? new Date(msg.created_at).getTime() : Date.now() });
         } catch (e) {
           console.error("Redis parse error:", e);
         }
@@ -76,15 +76,17 @@ export const initSocketServer = async (httpServer) => {
       setTimeout(async () => {
         for (const msg of allMessages) {
           if (msg.status !== "sent") continue;
-          socket.emit("chat_receive", {...msg,encrypted_payload: msg.encrypted_payload? msg.encrypted_payload.toString(): null});
-          const senderRoom =`user:${msg.sender_id}:device:${msg.sender_device_id}`;
-          io.to(senderRoom).emit("message_delivered", {message_id: msg.id,conversation_id: msg.conversation_id,status: "delivered"});
+          // console.log('allMessages',allMessages);
+          
+          socket.emit("chat_receive", { ...msg, encrypted_payload: msg.encrypted_payload ? msg.encrypted_payload.toString() : null });
+          const senderRoom = `user:${msg.sender_id}:device:${msg.sender_device_id}`;
+          io.to(senderRoom).emit("message_delivered", { message_id: msg.id, conversation_id: msg.conversation_id, status: "delivered" });
 
           //UPDATE DB IF MESSAGE CAME FROM DB
           if (!msg.source || msg.source === "db") {
             await messageModel.updateMessageStatus(msg.id, "delivered");
           }
- 
+
           // 🔥 UPDATE REDIS IF MESSAGE CAME FROM REDIS
           if (msg.source === "redis") {
             const redisKey = `offline:${userId}:${deviceId}`;
@@ -92,7 +94,7 @@ export const initSocketServer = async (httpServer) => {
             for (const msgStr of messages) {
               const redisMsg = JSON.parse(msgStr);
               if (redisMsg.id === msg.id) {
-                const updatedMsg = {...redisMsg,status: "delivered"};
+                const updatedMsg = { ...redisMsg, status: "delivered" };
                 await redis.lrem(redisKey, 0, msgStr);
                 await redis.rpush(redisKey, JSON.stringify(updatedMsg));
                 break;
