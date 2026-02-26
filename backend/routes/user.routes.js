@@ -1,10 +1,6 @@
 import express from 'express';
 import {
   createProfile,
-  fetchDeviceIdByUserId,
-  fetchIdentityKeyByUserId,
-  fetchPreKeyBundle,
-  fetchPreKeyCount,
   fetchPrivacyPolicy,
   fetchTermsAndConditions,
   fetchUserProfileByUserId,
@@ -15,8 +11,6 @@ import {
   sendOtp,
   updateUserPresence,
   updateUserProfile,
-  uploadAdditionalPreKeys,
-  uploadKeyBundle,
   verifyOtp
 } from '../controllers/user.controller.js';
 import { authGuard } from '../middlewares/guard.middleware.js';
@@ -53,14 +47,6 @@ router.get("/fetch-profile", authGuard, getUserProfile);
 router.put("/update-profile", authGuard, uploadProfile.fields(fieldsConfig), updateUserProfile);
 router.get("/fetch-terms-and-conditions", fetchTermsAndConditions);
 router.get("/fetch-privacy-policy", fetchPrivacyPolicy);
-
-router.post("/bundle", authGuard, uploadKeyBundle);
-router.get("/bundle-by-user-id", authGuard, fetchPreKeyBundle);
-router.get("/fetch-deviceId-by-user-id", authGuard, fetchDeviceIdByUserId);
-router.get("/identityKey-by-user-id", authGuard, fetchIdentityKeyByUserId);
-router.get("/prekey-count", authGuard, fetchPreKeyCount);
-router.post("/uploads-prekeys", authGuard, uploadAdditionalPreKeys);
-
 router.post("/match-contacts", authGuard, matchContacts);
 router.post("/logout", authGuard, logout);
 router.post("/fetch-profile-by-user-id", authGuard, fetchUserProfileByUserId);

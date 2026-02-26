@@ -26,7 +26,7 @@ export const verifyOtp = apiHandler(async (req, res) => {
     if (!phoneHash) {
         throw new ApiError(INVALID, getMessageByLang(language, "OTP_INVALID"));
     }
-    const token = jwt.sign({ phone_hash: phoneHash, id: user[0].id, language: user[0].language }, process.env.JWT_SECRET, { expiresIn: "15m" });
+    const token = jwt.sign({ phone_hash: phoneHash, id: user[0].id, language: user[0].language }, process.env.JWT_SECRET, { expiresIn: "30d" });
     let deleteReciverPreviousMsg = await messageModel.deleteMessagesByDevice(device_id);
     let userDetails = { token: token, user_id: user[0].id, language: user[0].language };
     return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "OTP_VERIFIED"), userDetails, res);
@@ -89,68 +89,6 @@ export const fetchPrivacyPolicy = apiHandler(async (req, res) => {
     return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "PRIVACY_POLICY_FETCHED"), content, res);
 });
 
-export const uploadKeyBundle = apiHandler(async (req, res) => {
-    const { id, language } = req.user;
-    const userId = id;
-    const payload = req.body;
-    let isbundleCreated = await userService.uploadKeyBundleService(userId, payload);
-    if (isbundleCreated == false) {
-        throw new ApiError(INVALID, getMessageByLang(language, "BUNDLE_CREATE_FAILED"));
-    }
-    return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "BUNDLE_CREATED"), true, res);
-});
-
-export const fetchPreKeyBundle = apiHandler(async (req, res) => {
-    const { id, language } = req.user;
-    let userId = req.query.userId;
-    const content = await userService.fetchPreKeyBundleService(userId);
-    if (content.status === false) {
-        throw new ApiError(INVALID, getMessageByLang(language, "PRE_KEY_BUNDLE_NOT_FOUND"), {}, false);
-    }
-    return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "PRE_KEY_BUNDLE_FETCHED"), content, res);
-});
-
-export const fetchDeviceIdByUserId = apiHandler(async (req, res) => {
-    const { language } = req.user;
-    let userId = req.query.userId;
-    const deviceId = await userService.fetchDeviceIdByUserIdService(userId);
-    if (!deviceId) {
-        throw new ApiError(INVALID, getMessageByLang(language, "DEVICE_ID_NOT_FOUND"), {}, false);
-    }
-    return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "DEVICE_ID_FETCHED"), { device_id: deviceId }, res);
-});
-
-export const fetchIdentityKeyByUserId = apiHandler(async (req, res) => {
-    const { language } = req.user;
-    let userId = req.query.userId;
-    const identityKey = await userService.fetchIdentityKeyByUserIdService(userId);
-    if (!identityKey) {
-        throw new ApiError(INVALID, getMessageByLang(language, "IDENTITY_KEY_NOT_FOUND"), {}, false);
-    }
-    return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "IDENTITY_KEY_FETCHED"), { identity_key: identityKey }, res);
-});
-
-export const fetchPreKeyCount = apiHandler(async (req, res) => {
-    const { id, language } = req.user;
-    const count = await userService.fetchPreKeyCountService(id);
-    if (count === null) {
-        throw new ApiError(INVALID, getMessageByLang(language, "PREKEY_NOT_FOUND"), {}, false);
-    }
-    return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "PREKEY_COUNT_FETCHED"), { count }, res);
-});
-
-export const uploadAdditionalPreKeys = apiHandler(async (req, res) => {
-    const { language, id } = req.user;
-    const { deviceId, preKeys } = req.body;
-
-    let userId = id;
-    if (!Array.isArray(preKeys) || preKeys.length === 0) {
-        throw new ApiError(INVALID, getMessageByLang(language, "PREKEY_REQUIRED"), {}, false);
-    }
-    const insertedCount = await userService.uploadAdditionalPreKeysService(userId, deviceId, preKeys);
-    return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "PREKEY_UPLOADED"), { inserted: insertedCount }, res);
-});
-
 export const matchContacts = apiHandler(async (req, res) => {
     const { language } = req.user;
     const { phones } = req.body;
@@ -161,7 +99,6 @@ export const matchContacts = apiHandler(async (req, res) => {
     const matched = await userService.matchContactsService(phones);
     return apiResponse(CUSTOM_SUCCESS, getMessageByLang(language, "CONTACTS_FETCHED"), { matched }, res);
 });
-
 export const logout = async (req, res, next) => {
     const { id, language } = req.user;
     const { deviceId } = req.body;

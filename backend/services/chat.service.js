@@ -21,15 +21,14 @@ export const sendMessageServiceBySocket = async ({
   created_at, message_type, timestamp,
 }) => {
   const io = getIO();
-  const messageId = conversation_id;
   const formattedMsg = {
-    id: messageId, sender_id, sender_device_id, receiver_id, reciver_device_id,
+    id: conversation_id, sender_id, sender_device_id, receiver_id, reciver_device_id,
     conversation_id, created_at, encrypted_payload, message_type, timestamp, status: "sent"
   };
   const redisKey = `offline:${receiver_id}:${reciver_device_id}`;
   await redis.rpush(redisKey, JSON.stringify(formattedMsg));
   const senderRoom = `user:${sender_id}:device:${sender_device_id}`;
-  io.to(senderRoom).emit("message_sent_ack", { message_id: messageId, conversation_id, status: "sent" });
+  io.to(senderRoom).emit("message_sent_ack", { message_id: conversation_id, conversation_id, status: "sent" });
 
   const receiverRoom = `user:${receiver_id}:device:${reciver_device_id}`;
   const sockets = await io.in(receiverRoom).fetchSockets();
